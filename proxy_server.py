@@ -1,14 +1,18 @@
 from flask import Flask, request, jsonify
 import yt_dlp
-import requests
 import os
 
 app = Flask(__name__)
 
 @app.route('/proxy_download', methods=['POST'])
 def proxy_download():
-    video_url = request.json['video_url']
-    quality = request.json['quality']
+    data = request.get_json()
+
+    if not data or 'video_url' not in data or 'quality' not in data:
+        return jsonify({'success': False, 'error': 'Invalid input'}), 400
+
+    video_url = data['video_url']
+    quality = data['quality']
 
     ydl_opts = {
         'format': f'bestvideo[height<={quality}]+bestaudio/best',
@@ -23,8 +27,8 @@ def proxy_download():
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=False)
-            download_url = info['url']
-            title = info['title']
+            download_url = info.get('url', None)
+            title = info.get('title', None)
 
         return jsonify({
             'success': True,
@@ -38,4 +42,4 @@ def proxy_download():
         }), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))

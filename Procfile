@@ -1,1 +1,1 @@
-web: gunicorn proxy_server:app
+web: python proxy_server.py
