@@ -8,7 +8,6 @@ import logging
 app = Flask(__name__)
 CORS(app)
 
-# Configuração básica de logging
 logging.basicConfig(level=logging.INFO)
 
 def is_valid_url(url):
@@ -44,16 +43,20 @@ def proxy_download():
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }] if quality == 'audio' else [],
-        'noplaylist': True,  # Evita baixar playlists inteiras
-        'quiet': True,  # Reduz a verbosidade do output
-        'outtmpl': '/tmp/%(title)s.%(ext)s',  # Define um diretório temporário para armazenar o arquivo
+        'noplaylist': True,
+        'quiet': True,
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=False)
-            download_url = info.get('url', None)
             title = info.get('title', None)
+            
+            download_url = None
+            if 'url' in info:
+                download_url = info['url']
+            elif 'formats' in info and len(info['formats']) > 0:
+                download_url = info['formats'][-1]['url']  # Obtém a URL do formato mais próximo do solicitado
 
         return jsonify({
             'success': True,
@@ -69,4 +72,5 @@ def proxy_download():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
+
 
